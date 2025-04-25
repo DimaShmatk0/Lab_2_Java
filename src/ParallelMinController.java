@@ -4,6 +4,7 @@ public class ParallelMinController {
     private final int[] arr;
     private final RangeMinFinder[] arrayRangeMinFinder;
     private int countFinishedThread;
+    private final Object lockObject = new Object(); // Об'єкт для синхронізації
 
     public ParallelMinController(int[] arr, int length, int threadNum) {
         this.length = length;
@@ -24,16 +25,12 @@ public class ParallelMinController {
             int end = start + segmentSize;
             ranges[i][0] = start;
             ranges[i][1] = end;
-            /*
-            System.out.println("Start: " + start);
-            System.out.println("Ebd: " + end);
-            System.out.println();
-            */start = end;
+            start = end;
         }
         return ranges;
     }
 
-    public synchronized void runController() throws InterruptedException {
+    public void runController() {
         int[][] arrSegmentRange = getSegmentRange();
 
         for (int i = 0; i < threadNum; i++) {
@@ -41,8 +38,15 @@ public class ParallelMinController {
             arrayRangeMinFinder[i].start();
         }
 
-        while (countFinishedThread < threadNum) {
-            wait();
+        synchronized (lockObject) {
+            while (countFinishedThread < threadNum) {
+                try {
+                    lockObject.wait();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+            }
         }
 
         int globalMin = arrayRangeMinFinder[0].getMinValue();
@@ -59,10 +63,12 @@ public class ParallelMinController {
         System.out.println("Індекс мінімального значення: " + globalIndex);
     }
 
-    public synchronized void incrementFinishedThread() {
-        countFinishedThread++;
-        if (countFinishedThread == threadNum) {
-            notifyAll();
+    public void incrementFinishedThread() {
+        synchronized (lockObject) {
+            countFinishedThread++;
+            if (countFinishedThread == threadNum) {
+                lockObject.notifyAll();
+            }
         }
     }
 }
