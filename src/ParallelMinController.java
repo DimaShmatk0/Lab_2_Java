@@ -4,7 +4,7 @@ public class ParallelMinController {
     private final int[] arr;
     private final RangeMinFinder[] arrayRangeMinFinder;
     private int countFinishedThread;
-    private final Object lockObject = new Object(); // Об'єкт для синхронізації
+    private final Object lockObject = new Object();
 
     public ParallelMinController(int[] arr, int length, int threadNum) {
         this.length = length;
